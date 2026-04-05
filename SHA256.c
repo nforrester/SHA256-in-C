@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     if(argumentCount == 0)
     {
         printf("Please supply a file to hash as command line arguments.");
-        exit;
+        return 1;
     }
     else if(argumentCount >= 1)
     {
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     else
     {
         printf("Invalid arguments, please recheck your spelling.");
-        exit;
+        return 1;
     }
     
     return 0;
@@ -176,7 +176,6 @@ void calculateHash(FILE *file)
 
     // For loop to iterate through the message block 
     int j;
-    int o;
 
     printf("\n Initalized variables... Entering loops\n");
 
@@ -248,14 +247,14 @@ void calculateHash(FILE *file)
     
     // Print the results
     printf("\n=================== HASH OUTPUT ==================================\n\n");
-    printf("%08llx", H[0]);
-    printf("%08llx", H[1]);
-    printf("%08llx", H[2]);
-    printf("%08llx", H[3]);
-    printf("%08llx", H[4]);
-    printf("%08llx", H[5]);
-    printf("%08llx", H[6]);
-    printf("%08llx", H[7]);
+    printf("%08llx", (long long unsigned int) H[0]);
+    printf("%08llx", (long long unsigned int) H[1]);
+    printf("%08llx", (long long unsigned int) H[2]);
+    printf("%08llx", (long long unsigned int) H[3]);
+    printf("%08llx", (long long unsigned int) H[4]);
+    printf("%08llx", (long long unsigned int) H[5]);
+    printf("%08llx", (long long unsigned int) H[6]);
+    printf("%08llx", (long long unsigned int) H[7]);
     
     printf("\n\n==================================================================\n\n");
 
@@ -378,7 +377,6 @@ void printFileContents(FILE *fileForPrinting)
 {
     // Variables
     char fileContents[MAXCHAR];
-    char fileContentsAsString[MAXCHAR];
     long fileSize;
 
     // First check to make sure the file could be found
@@ -390,7 +388,7 @@ void printFileContents(FILE *fileForPrinting)
         // Calculate the size of the file
         fileSize = calcFileSize(fileForPrinting);
 
-        printf("\n File Size (characters): %d \n", fileSize);
+        printf("\n File Size (characters): %ld \n", fileSize);
 
         printf("\n ============= File Contents ============= \n");
 
