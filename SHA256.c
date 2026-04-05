@@ -53,8 +53,8 @@ void printFileContents(FILE *fileForPrinting);
 int calcFileSize(FILE *file);
 void endianCheckPrint();
 _Bool endianCheck();
-int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits);
-void calculateHash(FILE *file);
+int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits, bool verbose);
+void calculateHash(FILE *file, bool verbose);
 int nextMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits);
 
 
@@ -66,46 +66,56 @@ int main(int argc, char *argv[])
     FILE *fileForPrinting;
     char* fileName;
     int argumentCount = argc;
+    bool verbose = true;
+    bool argumentsParsedSuccessfully = false;
 
-    // Print header
-    printf("\n======== SHA256 - HASHING ALGORITHM ========");
+    if (argumentCount == 2) {
+        fileName = argv[1];
+        argumentsParsedSuccessfully = true;
+    } else if (argumentCount == 3) {
+        if (strcmp(argv[1], "--quiet") == 0) {
+            verbose = false;
+            fileName = argv[2];
+            argumentsParsedSuccessfully = true;
+        } else if (strcmp(argv[2], "--quiet") == 0) {
+            fileName = argv[1];
+            verbose = false;
+            argumentsParsedSuccessfully = true;
+        }
+    }
 
-    // Test to make sure the user is inputting a filename
-    if(argumentCount == 0)
-    {
-        printf("Please supply a file to hash as command line arguments.");
+    if (!argumentsParsedSuccessfully) {
+        printf("USAGE: %s FILENAME [--quiet]\n", argv[0]);
         return 1;
     }
-    else if(argumentCount >= 1)
-    {
+
+    if (verbose) {
+        // Print header
+        printf("\n======== SHA256 - HASHING ALGORITHM ========");
         printf("\n Correct arguments. Attemping to read file.. \n");
+    }
 
-        fileName = argv[1];
-            
-        // Open a file, specifiying which file using command line arguments
-        fileForPrinting = fopen(fileName, "r");
-        file = fopen(fileName, "r");
+    // Open a file, specifiying which file using command line arguments
+    fileForPrinting = fopen(fileName, "r");
+    file = fopen(fileName, "r");
 
-         // First check to make sure the file could be found
-        if (file == NULL){
-            printf("\n Could not open file %s\n", fileName);
-        }
-        else
-        {
-            // Function calls
-            printf("\n File ok, executing functions.. \n");
-            endianCheckPrint();
-            printFileContents(fileForPrinting);
-
-             // Open a file, specifiying which file using command line arguments
-            calculateHash(file);
-
-        }
+     // First check to make sure the file could be found
+    if (file == NULL){
+        printf("\n Could not open file %s\n", fileName);
+        return 1;
     }
     else
     {
-        printf("Invalid arguments, please recheck your spelling.");
-        return 1;
+        // Function calls
+        if (verbose) {
+            printf("\n File ok, executing functions.. \n");
+            endianCheckPrint();
+            printFileContents(fileForPrinting);
+        }
+
+         // Open a file, specifiying which file using command line arguments
+        calculateHash(file, verbose);
+
     }
     
     return 0;
@@ -113,7 +123,7 @@ int main(int argc, char *argv[])
 }
 
 // === Functions ===
-void calculateHash(FILE *file)
+void calculateHash(FILE *file, bool verbose)
 {   
     // Variables
     // The current message block
@@ -125,7 +135,9 @@ void calculateHash(FILE *file)
     // The state of the program
     enum status state = READ;
 
-    printf("\n Starting SHA256 algorithm....\n");
+    if (verbose) {
+        printf("\n Starting SHA256 algorithm....\n");
+    }
 
     // Declare the K constant
     // Defined in Section 4.2.2
@@ -177,9 +189,11 @@ void calculateHash(FILE *file)
     // For loop to iterate through the message block 
     int j;
 
-    printf("\n Initalized variables... Entering loops\n");
+    if (verbose) {
+        printf("\n Initalized variables... Entering loops\n");
+    }
 
-    while(fillMessageBlock(file, &msgBlock, &state, &numBits))
+    while(fillMessageBlock(file, &msgBlock, &state, &numBits, verbose))
     {
         for(j=0; j<16; j++)
         {   
@@ -246,7 +260,9 @@ void calculateHash(FILE *file)
     }// end while
     
     // Print the results
-    printf("\n=================== HASH OUTPUT ==================================\n\n");
+    if (verbose) {
+        printf("\n=================== HASH OUTPUT ==================================\n\n");
+    }
     printf("%08llx", (long long unsigned int) H[0]);
     printf("%08llx", (long long unsigned int) H[1]);
     printf("%08llx", (long long unsigned int) H[2]);
@@ -254,15 +270,17 @@ void calculateHash(FILE *file)
     printf("%08llx", (long long unsigned int) H[4]);
     printf("%08llx", (long long unsigned int) H[5]);
     printf("%08llx", (long long unsigned int) H[6]);
-    printf("%08llx", (long long unsigned int) H[7]);
+    printf("%08llx\n", (long long unsigned int) H[7]);
     
-    printf("\n\n==================================================================\n\n");
+    if (verbose) {
+        printf("\n==================================================================\n\n");
+    }
 
     fclose(file);
 }
 
 // This function is used to handle the opening and reading of files
-int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits)
+int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits, bool verbose)
 {   
     // Variables
     __uint64_t numBytes;
@@ -271,7 +289,9 @@ int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *stat
     // If we've finished padding and processing all the message blocks, exit
     if(*state == FINISH)
     {
-        printf("\n State = FINISH.\n");
+        if (verbose) {
+            printf("\n State = FINISH.\n");
+        }
         return 0;
     }
 
@@ -279,7 +299,9 @@ int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *stat
     // Check if we need another block full of padding
     if(*state == PAD0 || *state == PAD1)
     {
-        printf("\n State = PAD0 or PAD1.\n");
+        if (verbose) {
+            printf("\n State = PAD0 or PAD1.\n");
+        }
 
         // Set the first 56 bytes to all zero bits
         for(i=0; i<56; i++)
