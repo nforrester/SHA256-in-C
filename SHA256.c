@@ -447,43 +447,43 @@ __uint32_t sig0(__uint32_t x)
 {
     // Section 3.2
 	return (rotr(x, 7) ^ rotr(x, 18) ^ shr(x, 3));
-};
+}
 
 __uint32_t sig1(__uint32_t x)
 {
 	return (rotr(x, 17) ^ rotr(x, 19) ^ shr(x, 10));
-};
+}
 
 // Rotate bits right
 __uint32_t rotr(__uint32_t x, __uint16_t a)
 {
 	return (x >> a) | (x << (32 - a));
-};
+}
 
 // Shift bits right
 __uint32_t shr(__uint32_t x, __uint16_t b)
 {
 	return (x >> b);
-};
+}
 
 __uint32_t SIG0(__uint32_t x)
 {
 	return (rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22));
-};
+}
 
 __uint32_t SIG1(__uint32_t x)
 {
 	return (rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25));
-};
+}
 
 // Choose
 __uint32_t Ch(__uint32_t x,__uint32_t y,__uint32_t z)
 {
 	return ((x & y) ^ (~(x)&z));
-};
+}
 
 // Majority decision
 __uint32_t Maj(__uint32_t x,__uint32_t y,__uint32_t z)
 {
 	return ((x & y) ^ (x & z) ^ (y & z));
-};
+}

@@ -2,7 +2,7 @@
 
 set -e
 
-gcc -Wall -Werror -o SHA256 SHA256.c
+gcc -Wall -Wextra -Wpedantic -Werror -o SHA256 SHA256.c
 ./SHA256 testFile1.txt
 echo ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 ./SHA256 testFile2.txt
