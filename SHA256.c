@@ -49,11 +49,11 @@ __uint32_t SIG1(__uint32_t x);
 __uint32_t Ch(__uint32_t x,__uint32_t y,__uint32_t z);
 __uint32_t Maj(__uint32_t x,__uint32_t y,__uint32_t z);
 
-void printFileContents();
-int calcFileSize();
+void printFileContents(FILE *fileForPrinting);
+int calcFileSize(FILE *file);
 void endianCheckPrint();
 _Bool endianCheck();
-int fillMessageBlock();
+int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits);
 void calculateHash(FILE *file);
 int nextMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits);
 
