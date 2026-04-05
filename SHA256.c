@@ -9,20 +9,11 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#define byteSwap32(x) (((x) >> 24) | (((x)&0x00FF0000) >> 8) | (((x)&0x0000FF00) << 8) | ((x) << 24))
-#define byteSwap64(x)                                                      \
-	((((x) >> 56) & 0x00000000000000FF) | (((x) >> 40) & 0x000000000000FF00) | \
-	 (((x) >> 24) & 0x0000000000FF0000) | (((x) >> 8) & 0x00000000FF000000) |  \
-	 (((x) << 8) & 0x000000FF00000000) | (((x) << 24) & 0x0000FF0000000000) |  \
-	 (((x) << 40) & 0x00FF000000000000) | (((x) << 56) & 0xFF00000000000000))
-
-// Define a union for easy reference
-// Union represents a message block
-union messageBlock
+// Define a struct for easy reference,
+// representing a message block
+struct messageBlock
 {
     __uint8_t e[64];
-    __uint32_t t[16];
-    __uint64_t s[8];
 };
 
 // ENUM to control state of the program
@@ -51,11 +42,10 @@ __uint32_t Maj(__uint32_t x,__uint32_t y,__uint32_t z);
 
 void printFileContents(FILE *fileForPrinting);
 int calcFileSize(FILE *file);
-void endianCheckPrint();
-_Bool endianCheck();
-int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits, bool verbose);
+int fillMessageBlock(FILE *file, struct messageBlock *msgBlock, enum status *state, __uint64_t *numBits, bool verbose);
 void calculateHash(FILE *file, bool verbose);
-int nextMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits);
+int nextMessageBlock(FILE *file, struct messageBlock *msgBlock, enum status *state, __uint64_t *numBits);
+void storeNumBits(struct messageBlock *msgBlock, __uint64_t *numBits);
 
 
 // ==== Main ===
@@ -109,7 +99,6 @@ int main(int argc, char *argv[])
         // Function calls
         if (verbose) {
             printf("\n File ok, executing functions.. \n");
-            endianCheckPrint();
             printFileContents(fileForPrinting);
         }
 
@@ -127,7 +116,7 @@ void calculateHash(FILE *file, bool verbose)
 {
     // Variables
     // The current message block
-    union messageBlock msgBlock;
+    struct messageBlock msgBlock;
 
     // The number of bits read from the file
     __uint64_t numBits = 0;
@@ -197,19 +186,11 @@ void calculateHash(FILE *file, bool verbose)
     {
         for(j=0; j<16; j++)
         {
-            // Fist check for big or little endian
-            // If our system is big endian we dont need to do any conversion
-            if(endianCheck()==true)
-            {
-                W[j] = msgBlock.t[j];
-            }
-            else
-            {
-                // Add the current message block to our messag schedule
-                // Convert to big endian first
-                W[j] = byteSwap32(msgBlock.t[j]);
-            }
-
+            // Add the current message block to our message schedule
+            W[j] = (msgBlock.e[j * 4 + 0] << (8 * 3)) +
+                   (msgBlock.e[j * 4 + 1] << (8 * 2)) +
+                   (msgBlock.e[j * 4 + 2] << (8 * 1)) +
+                   (msgBlock.e[j * 4 + 3] << (8 * 0));
         }
 
         for (j=16; j<64; j++)
@@ -280,7 +261,7 @@ void calculateHash(FILE *file, bool verbose)
 }
 
 // This function is used to handle the opening and reading of files
-int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *state, __uint64_t *numBits, bool verbose)
+int fillMessageBlock(FILE *file, struct messageBlock *msgBlock, enum status *state, __uint64_t *numBits, bool verbose)
 {
     // Variables
     __uint64_t numBytes;
@@ -310,7 +291,7 @@ int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *stat
         }
 
         // Set the last 64 bits to an integer (should be big endian)
-        msgBlock->s[7] = byteSwap64(*numBits);
+        storeNumBits(msgBlock, numBits);
 
         // Set the state to finish
         *state = FINISH;
@@ -351,7 +332,7 @@ int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *stat
         }
 
         // Store the length of the file in bits as a (Should be big endian) unsigned 64 bit int
-        msgBlock->s[7] = byteSwap64(*numBits);
+        storeNumBits(msgBlock, numBits);
 
         // Change the state of our program
         *state = FINISH;
@@ -392,6 +373,19 @@ int fillMessageBlock(FILE *file, union messageBlock *msgBlock, enum status *stat
     printf("\n");
     */
     return 1;
+}
+
+// Store the number of bits processed so far in the last 64 bits of the message block.
+void storeNumBits(struct messageBlock *msgBlock, __uint64_t *numBits)
+{
+    msgBlock->e[64-8] = *numBits >> (7 * 8) & 0xff;
+    msgBlock->e[64-7] = *numBits >> (6 * 8) & 0xff;
+    msgBlock->e[64-6] = *numBits >> (5 * 8) & 0xff;
+    msgBlock->e[64-5] = *numBits >> (4 * 8) & 0xff;
+    msgBlock->e[64-4] = *numBits >> (3 * 8) & 0xff;
+    msgBlock->e[64-3] = *numBits >> (2 * 8) & 0xff;
+    msgBlock->e[64-2] = *numBits >> (1 * 8) & 0xff;
+    msgBlock->e[64-1] = *numBits >> (0 * 8) & 0xff;
 }
 
 // This function is used to read the contents of the file and return them as an array of chars
@@ -438,26 +432,6 @@ int calcFileSize(FILE *file)
     int size=ftell(file);
     fseek(file,prev,SEEK_SET);
     return size;
-}
-
-void endianCheckPrint()
-{
-    int num = 1;
-        if(*(char *)&num == 1) {
-                printf("\n Your system is Little-Endian!\n");
-        } else {
-                printf("Your system is Big-Endian!\n");
-        }
-}
-
-_Bool endianCheck()
-{
-    int num = 1 ;
-        if(*(char *)&num == 1) {
-                return false;
-        } else {
-                return true;
-        }
 }
 
 // Section 4.1.2
