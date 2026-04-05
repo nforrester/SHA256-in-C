@@ -19,7 +19,6 @@ struct messageBlock
 // ENUM to control state of the program
 enum status{READ,
             PAD0,
-            PAD1,
             FINISH
             };
 
@@ -276,12 +275,12 @@ int fillMessageBlock(FILE *file, struct messageBlock *msgBlock, enum status *sta
         return 0;
     }
 
-    // Handle our PAD0 and PAD1 states
+    // Handle our PAD0 states
     // Check if we need another block full of padding
-    if(*state == PAD0 || *state == PAD1)
+    if(*state == PAD0)
     {
         if (verbose) {
-            printf("\n State = PAD0 or PAD1.\n");
+            printf("\n State = PAD0.\n");
         }
 
         // Set the first 56 bytes to all zero bits
@@ -295,13 +294,6 @@ int fillMessageBlock(FILE *file, struct messageBlock *msgBlock, enum status *sta
 
         // Set the state to finish
         *state = FINISH;
-
-        // If state is PAD1, set the first bit of msgBlock to 1
-        if(*state == PAD1)
-        {
-            // 0x80 = 10000000
-            msgBlock->e[0] = 0x80;
-        }
 
         // keep the loop in SHA256 going for one more iteration
         return 1;
@@ -354,13 +346,6 @@ int fillMessageBlock(FILE *file, struct messageBlock *msgBlock, enum status *sta
             msgBlock->e[numBytes] = 0x00;
             numBytes = numBytes + 1;
         }
-    }
-    // Otherwise if we're at the end of the file, need to create a new message block full of padding
-    else if(feof(file))
-    {
-        // Set the state to PAD1
-        // We need a message Block full of padding
-        *state = PAD1;
     }
 
     // Print padding
